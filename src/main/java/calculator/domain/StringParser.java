@@ -7,42 +7,60 @@ import java.util.regex.Pattern;
  */
 public class StringParser {
 
+    // 기본 구분자 (쉼표 또는 콜론)
     private static final String DEFAULT_DELIMITER_REGEX = "[,:]";
 
-    // Console.readLine() 조건에 맞춰 parse() 메서드 수정
+    /**
+     * 입력 문자열을 파싱하여 숫자 문자열 배열로 반환합니다.
+     * 커스텀 구분자 형식("//;\\n1;2;3" 등)을 처리합니다.
+     *
+     * @param text 사용자가 입력한 문자열
+     * @return 분리된 숫자 문자열 배열
+     */
     public static String[] parse(String text) {
         if (text == null || text.trim().isEmpty()) {
             return new String[0];
         }
 
-        // 정규식 대신 문자열 함수(indexOf, startsWith)를 사용하여 커스텀 구분자 형식인지 확인
-        // Console.readLine()은 \n을 포함한 전체 라인을 읽어온다는 가정을 활용
+        // 커스텀 구분자 형식("//"로 시작하고 "\n"을 포함)인지 확인
         if (text.startsWith("//") && text.contains("\n")) {
             return parseWithCustomDelimiter(text);
         }
 
-        // 커스텀 구분자가 없는 경우: 기본 구분자 외에 \n 줄 바꿈 문자도 분리 기준으로 추가
+        // 커스텀 구분자가 없는 경우: 기본 구분자 외에 '\n' 줄 바꿈 문자를 분리 기준으로 사용
+        // 정규식 뒤에 '+'를 붙여 구분자가 연속될 경우 빈 문자열이 발생하는 것을 방지
         String defaultDelimiterAndNewline = DEFAULT_DELIMITER_REGEX + "|\n";
-        return text.split(defaultDelimiterAndNewline);
+        return text.split(defaultDelimiterAndNewline + "+");
     }
 
-    // 커스텀 구분자 파싱 로직 (정규식 대신 문자열 함수 사용)
+    /**
+     * 커스텀 구분자 형식을 파싱합니다.
+     * @param text 커스텀 구분자 형식의 문자열 (예: "//;\\n1;2;3")
+     * @return 분리된 숫자 문자열 배열
+     */
     private static String[] parseWithCustomDelimiter(String text) {
-        // \n의 위치를 찾아 문자열 함수로 안전하게 추출
         int newLineIndex = text.indexOf('\n');
 
+        // \n이 "//" 뒤에 있어야 유효한 형식입니다.
+        if (newLineIndex <= 2) {
+            throw new IllegalArgumentException("커스텀 구분자 형식이 잘못되었습니다.");
+        }
+
         // 1. 커스텀 구분자 추출 (예: ";")
-        // "//" (2글자)와 "\n" 사이의 문자를 추출합니다.
         String customDelimiter = text.substring(2, newLineIndex);
 
         // 2. 숫자 문자열 추출 (커스텀 구분자 형식 이후)
-        // \n 뒤의 문자열부터 끝까지를 추출하고 trim()
         String numbersText = text.substring(newLineIndex + 1).trim();
 
-        // 3. 구분자 통합: 기본 구분자, 커스텀 구분자, 줄 바꿈 문자를 합칩니다.
+        // 3. 구분자 통합: 기본 구분자, 커스텀 구분자를 합칩니다. (여기서 '\n'은 이미 분리됨)
+        // Pattern.quote를 사용하여 특수문자가 포함된 구분자도 안전하게 처리
         String customRegex = Pattern.quote(customDelimiter);
-        String combinedDelimiterRegex = DEFAULT_DELIMITER_REGEX + "|" + customRegex + "|\n";
 
-        return numbersText.split(combinedDelimiterRegex);
+        // 커스텀 구분자 형식에서는 이미 줄바꿈으로 정의부가 끝났으므로,
+        // 숫자 텍스트(numbersText)를 기본 구분자(`[,:]`)와 커스텀 구분자로만 분리합니다.
+        String combinedDelimiterRegex = DEFAULT_DELIMITER_REGEX + "|" + customRegex;
+
+        // 정규식 뒤에 '+'를 붙여 구분자가 연속될 경우 빈 문자열이 발생하는 것을 방지
+        return numbersText.split(combinedDelimiterRegex + "+");
     }
 }
