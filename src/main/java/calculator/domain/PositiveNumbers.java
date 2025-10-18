@@ -2,6 +2,7 @@ package calculator.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 숫자 목록을 감싸는 일급 컬렉션입니다.
@@ -18,10 +19,20 @@ public class PositiveNumbers {
      */
     public PositiveNumbers(String[] numberStrings) {
         this.numbers = new ArrayList<>();
+        List<Integer> negativeNumbers = new ArrayList<>(); // 음수를 모을 리스트
+
         for (String numberStr : numberStrings) {
             int number = convertToInt(numberStr);
-            validateNegative(number);
+
+            if (number < 0) {
+                negativeNumbers.add(number); // 음수는 리스트에 추가
+            }
             this.numbers.add(number);
+        }
+
+        // 모든 반복 후, 음수 리스트가 비어있지 않으면 예외를 던집니다.
+        if (!negativeNumbers.isEmpty()) {
+            throwNegativeException(negativeNumbers);
         }
     }
 
@@ -32,20 +43,24 @@ public class PositiveNumbers {
      */
     private int convertToInt(String numberStr) {
         try {
+            // 공백을 제거하고 변환을 시도
             return Integer.parseInt(numberStr.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("문자열에 숫자가 아닌 값이 포함되어 있습니다.");
+            throw new IllegalArgumentException("문자열에 숫자가 아닌 값이 포함되어 있습니다: " + numberStr, e);
         }
     }
 
     /**
-     * 숫자가 음수인지 검사합니다. 음수이면 예외를 발생시킵니다.
-     * @param number 검사할 숫자
+     * 발견된 음수 목록을 기반으로 IllegalArgumentException을 발생시킵니다.
+     * @param negativeNumbers 발견된 음수 목록
      */
-    private void validateNegative(int number) {
-        if (number < 0) {
-            throw new IllegalArgumentException("음수는 입력할 수 없습니다.");
-        }
+    private void throwNegativeException(List<Integer> negativeNumbers) {
+        String negativeList = negativeNumbers.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+
+        // 테스트가 기대하는 명확한 예외 메시지를 제공합니다.
+        throw new IllegalArgumentException("음수는 입력할 수 없습니다: " + negativeList);
     }
 
     /**

@@ -15,6 +15,7 @@ public class InputView {
      */
     public static String getInput() {
         System.out.println(INPUT_MESSAGE);
-        return Console.readLine();
+        // [수정]: 입력 문자열의 앞뒤 공백을 확실하게 제거합니다.
+        return Console.readLine().trim();
     }
 }
